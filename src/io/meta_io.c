@@ -34,6 +34,62 @@
 char **snapnames  = NULL;
 char **blocknames = NULL;
 
+/* added for Ginkaku by stanaka */
+#ifdef FOR_GINKAKU
+
+#include <sys/stat.h>
+#include <sys/types.h>
+int is_directory(const char *input) {
+    struct stat st;
+    if (stat(input, &st) != 0)
+        return 0;
+    return S_ISDIR(st.st_mode);
+}
+
+int detect_hierarchical_input(int maxlen, int64_t snap, int64_t block) {
+    char    tmp_buff[512];
+    int64_t i = 0, out = 0, l = strlen(FILENAME);
+    assert(snap < NUM_SNAPS);
+    snprintf(tmp_buff, maxlen, "%s/", INBASE);
+    out = strlen(tmp_buff);
+    for (; (i < l) && (out < (maxlen - 1)); i++) {
+        if (FILENAME[i] != '<') {
+            tmp_buff[out]     = FILENAME[i];
+            tmp_buff[out + 1] = 0;
+        } else {
+            if (!strncmp(FILENAME + i, "<snap>", 6)) {
+                i += 5;
+                if (snapnames)
+                    snprintf(tmp_buff + out, maxlen - out, "%s",
+                             snapnames[snap]);
+                else {
+                    if (!strncasecmp(FILE_FORMAT, "GADGET", 6) ||
+                        !strncasecmp(FILE_FORMAT, "LGADGET", 7) ||
+                        !strncasecmp(FILE_FORMAT, "AREPO", 5))
+                        snprintf(tmp_buff + out, maxlen - out, "%03" PRId64,
+                                 snap);
+                    else
+                        snprintf(tmp_buff + out, maxlen - out, "%" PRId64,
+                                 snap);
+                }
+            } else if (!strncmp(FILENAME + i, "<block>", 7)) {
+                i += 6;
+                if (blocknames)
+                    snprintf(tmp_buff + out, maxlen - out, "%s",
+                             blocknames[block]);
+                else
+                    snprintf(tmp_buff + out, maxlen - out, "%" PRId64, block);
+            } else
+                tmp_buff[out] = FILENAME[i];
+        }
+        out = strlen(tmp_buff);
+    }
+    tmp_buff[out] = 0;
+    return is_directory(tmp_buff);
+}
+#endif
+/*******/
+
 void read_input_names(char *filename, char ***stringnames, int64_t *num_names) {
     int64_t i = 0, j;
     char    buffer[1024], **names = NULL;
@@ -65,6 +121,11 @@ void read_input_names(char *filename, char ***stringnames, int64_t *num_names) {
 }
 
 void get_input_filename(char *buffer, int maxlen, int64_t snap, int64_t block) {
+
+#ifdef FOR_GINKAKU
+    int hir_dir = detect_hierarchical_input(maxlen, snap, 0);
+#endif
+
     int64_t i = 0, out = 0, l = strlen(FILENAME);
     assert(snap < NUM_SNAPS);
     snprintf(buffer, maxlen, "%s/", INBASE);
@@ -99,8 +160,20 @@ void get_input_filename(char *buffer, int maxlen, int64_t snap, int64_t block) {
                 if (blocknames)
                     snprintf(buffer + out, maxlen - out, "%s",
                              blocknames[block]);
+#ifndef FOR_GINKAKU
                 else
                     snprintf(buffer + out, maxlen - out, "%" PRId64, block);
+#else
+                else {
+                    if (hir_dir) {
+                        int64_t dir_id = block / 1000;
+                        snprintf(buffer + out, maxlen - out, "%ld/%ld", dir_id,
+                                 block);
+                    } else {
+                        snprintf(buffer + out, maxlen - out, "%" PRId64, block);
+                    }
+                }
+#endif
             } else
                 buffer[out] = FILENAME[i];
         }
@@ -242,6 +315,8 @@ void read_particles(char *filename) {
             }
             if (!gadget)
                 continue;
+            if (!VEL_UNIT_GADGET)
+                continue; // for GINKAKU LIGHTCONE
             dx      = sqrt(dx);
             z       = comoving_distance_h_to_redshift(dx);
             a       = scale_factor(z);

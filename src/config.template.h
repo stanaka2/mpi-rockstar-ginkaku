@@ -138,3 +138,12 @@ integer(SUBDIR_DIGITS_OUTPUT, 4);    // and the length of subdir names (or sub-s
 
 // Additional parameters for MPI Rockstar for memory saving transfer
 integer(MEMORY_SAVING_TRANSFER, 0); // Flag for using memory saving transfer
+
+
+// Add for GINKAKU by stanaka
+#ifdef FOR_GINKAKU
+string(EXPANSION_TABLEFILE, "none"); // Path of expansion table file. This is valid if specified.
+string(VIR_DENSE_TABLEFILE, "none"); // Path of virial density table file. This is valid if specified.
+integer(READ_TABLE_ORDER, 3); // Accuracy of table interpolation.
+integer(VEL_UNIT_GADGET, 1); // Unit of velocity of particle. 1:Gadget format [(1/sqrt(a)) km/s]; 0:Physical unit [km/s] 
+#endif

@@ -135,6 +135,9 @@ void gadget2_extract_header_info(struct gadget_header *header) {
 #undef SWAP8
     }
 
+// comment out by stanaka.
+// If massive neutrino case, it failures here. header->omega_0 is CDM+baryon.
+#ifndef FOR_GINKAKU
     if (fabs(header->omega_0 + header->omega_lambda - 1.0) > 1e-5) {
         fprintf(stderr,
                 "[Error] Halo Finder Not Currently Configured to Run on "
@@ -143,6 +146,7 @@ void gadget2_extract_header_info(struct gadget_header *header) {
                 header->omega_0, header->omega_lambda);
         exit(1);
     }
+#endif
 
     Ol = header->omega_lambda;
     Om = header->omega_0;

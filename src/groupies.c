@@ -92,10 +92,262 @@ void free_haloinfo(struct HaloInfo *haloinfo) {
     }
 }
 
+// switch for GINKAKU
+// add by stanaka
+#ifndef FOR_GINKAKU
+
 double vir_density(double a) {
     double x = (Om / pow(a, 3)) / pow(hubble_scaling(1.0 / a - 1.0), 2.0) - 1.0;
     return ((18 * M_PI * M_PI + 82.0 * x - 39 * x * x) / (1.0 + x));
 }
+
+#else
+
+#include "vir_dense.h"
+double get_vir_density(const double);
+int    set_vir_density_table(char *, const double);
+double read_vir_density_table_log(const int, const double, const int);
+
+static double vir_dens_table[2][2048];
+
+double vir_density(double a) {
+
+    if (strcmp(EXPANSION_TABLEFILE, "none") == 0) {
+        double x =
+            (Om / pow(a, 3)) / pow(hubble_scaling(1.0 / a - 1.0), 2.0) - 1.0;
+        return ((18 * M_PI * M_PI + 82.0 * x - 39 * x * x) / (1.0 + x));
+    }
+
+    static int init_vir_density_flag = 0;
+    static int ltable                = 0;
+
+    if (init_vir_density_flag == 0) {
+        initialize_linear_growth();
+        printf("initialized linear growth\n");
+        fflush(stdout);
+
+        if (strcmp(VIR_DENSE_TABLEFILE, "none") != 0) {
+            const double amin = 1.0e-6; // smaller than minimum ascale of
+                                        // initialize_linear_growth()
+            ltable = set_vir_density_table(VIR_DENSE_TABLEFILE, amin);
+            printf("read expansion table %s. table length=%d\n",
+                   VIR_DENSE_TABLEFILE, ltable);
+            fflush(stdout);
+        }
+
+        init_vir_density_flag = 1;
+    }
+
+    if (strcmp(VIR_DENSE_TABLEFILE, "none") == 0) {
+        return get_vir_density(a);
+    } else {
+        const int order = READ_TABLE_ORDER;
+        return read_vir_density_table_log(order, a, ltable);
+    }
+}
+
+double get_vir_density(const double a) {
+    double x, y, y_appr, a_ta, zeta, eta_ta, eta_vir;
+    double delta_lin_col = 0.;
+
+    double delta0    = 1.;
+    double threshold = 1e7;
+    double deltanl;
+
+    double a_col   = a;
+    double dgrowth = get_linear_growth(a_col) / get_linear_growth(1.);
+
+    double delta0_min = 1. / dgrowth;
+    double delta0_max = 2. / dgrowth;
+
+    while (1) {
+        delta0  = (delta0_min + delta0_max) / 2.;
+        deltanl = spherical_collapse(a_col, delta0);
+        if (deltanl > threshold) {
+            delta_lin_col = delta0;
+            break;
+        } else if (isnan(deltanl)) {
+            delta0_max = delta0;
+        } else {
+            delta0_min = delta0;
+        }
+    }
+    if (delta_lin_col == 0) {
+        printf("could not get delta_lin_col\n");
+        exit(0);
+    }
+
+    calc_a_ta_zeta(a_col, delta_lin_col, &a_ta, &zeta);
+    x       = a_col / a_ta;
+    eta_ta  = 2. * (Omegade_a(a_ta) / Omegam_a(a_ta)) / zeta;
+    eta_vir = 2. * (Omegade_a(a_col) / Omegam_a(a_col)) * pow(x, -3.) / zeta;
+
+    y_appr = (1. - eta_vir / 2.) / (2. + eta_ta - 3. * eta_ta / 2.);
+    y      = Newton_method(eta_vir, eta_ta);
+
+    double Delta_vir = zeta * pow(x / y, 3.);
+    return Delta_vir;
+}
+
+int set_vir_density_table(char *inputfile, const double amin) {
+    FILE *fp;
+    fp = fopen(inputfile, "r");
+
+    if (fp == NULL) {
+        printf("Error: %s file not opened.", inputfile);
+        return EXIT_FAILURE;
+    }
+
+    double atbl0 = 0.9 * amin;
+    double a, vd;
+
+    int line = 0;
+
+    static char tmp[128];
+    size_t      len = 128;
+
+    // skip header
+    fgets(tmp, len, fp);
+
+    while (fscanf(fp, "%lf %lf", &a, &vd) != EOF) {
+        if (atbl0 > a)
+            continue;
+        line++;
+    }
+
+    // global table size
+    assert(line < 2048);
+
+    line = 0;
+    fseek(fp, 0, SEEK_SET);
+
+    // skip header
+    fgets(tmp, len, fp);
+
+    while (fscanf(fp, "%lf %lf", &a, &vd) != EOF) {
+        if (atbl0 > a)
+            continue;
+        // vir_dens_table[0][line] = a;
+        vir_dens_table[0][line] = log10(a);
+        vir_dens_table[1][line] = vd;
+        line++;
+    }
+
+    fclose(fp);
+
+    return line;
+}
+
+double read_vir_density_table_log(const int order, const double anow,
+                                  const int ntable) {
+    double *log_a_table, *vd_table;
+    log_a_table = vir_dens_table[0]; // log10(ascale)
+    vd_table    = vir_dens_table[1]; // H0/h
+
+    const double log_anow = log10(anow);
+
+    double log_a_min = log_a_table[0];
+    // double log_a_max = log_a_table[ntable - 1];
+    double da    = log_a_table[1] - log_a_table[0];
+    int    a_idx = (log_anow - log_a_min) / da;
+
+    static int lsearch  = 3;
+    int        hit_flag = 0;
+
+    for (int idx = a_idx - lsearch; idx < a_idx + lsearch; idx++) {
+        if (idx + 1 >= ntable)
+            continue;
+        if (log_a_table[idx] <= log_anow && log_anow <= log_a_table[idx + 1]) {
+            a_idx    = idx;
+            hit_flag = 1;
+            break;
+        }
+    }
+
+    if (hit_flag == 0) {
+        for (int idx = 0; idx < ntable - 1; idx++) {
+            if (log_a_table[idx] <= log_anow &&
+                log_anow <= log_a_table[idx + 1]) {
+                a_idx = idx;
+                break;
+            }
+        }
+        lsearch++;
+    }
+
+    double Delta_vir = 0.0;
+    int    a_idx_p1  = a_idx + 1;
+
+    if (a_idx_p1 >= ntable) {
+        Delta_vir = vd_table[a_idx];
+        return Delta_vir;
+    }
+
+    if (order == 1) {
+        double weight = (log_anow - log_a_table[a_idx]) /
+                        (log_a_table[a_idx_p1] - log_a_table[a_idx]);
+        Delta_vir =
+            (1.0 - weight) * vd_table[a_idx] + weight * vd_table[a_idx_p1];
+    }
+
+    else if (order == 2) {
+        int a_idx_m1 = a_idx - 1;
+
+        double ax = log_anow;
+        double a0 = log_a_table[a_idx_m1];
+        double a1 = log_a_table[a_idx];
+        double a2 = log_a_table[a_idx_p1];
+
+        double w0 = (ax - a1) * (ax - a2) / ((a0 - a1) * (a0 - a2));
+        double w1 = (ax - a0) * (ax - a2) / ((a1 - a0) * (a1 - a2));
+        double w2 = (ax - a0) * (ax - a1) / ((a2 - a0) * (a2 - a1));
+
+        Delta_vir = w0 * vd_table[a_idx_m1] + w1 * vd_table[a_idx] +
+                    w2 * vd_table[a_idx_p1];
+    }
+
+    else if (order == 3) {
+        int a_idx_m1 = a_idx - 1;
+        int a_idx_p2 = a_idx + 2;
+
+        if (a_idx_p2 >= ntable) {
+            double ax = log_anow;
+            double a0 = log_a_table[a_idx_m1];
+            double a1 = log_a_table[a_idx];
+            double a2 = log_a_table[a_idx_p1];
+
+            double w0 = (ax - a1) * (ax - a2) / ((a0 - a1) * (a0 - a2));
+            double w1 = (ax - a0) * (ax - a2) / ((a1 - a0) * (a1 - a2));
+            double w2 = (ax - a0) * (ax - a1) / ((a2 - a0) * (a2 - a1));
+
+            Delta_vir = w0 * vd_table[a_idx_m1] + w1 * vd_table[a_idx] +
+                        w2 * vd_table[a_idx_p1];
+
+        } else {
+            double ax = log_anow;
+            double a0 = log_a_table[a_idx_m1];
+            double a1 = log_a_table[a_idx];
+            double a2 = log_a_table[a_idx_p1];
+            double a3 = log_a_table[a_idx_p2];
+
+            double w0 = (ax - a1) * (ax - a2) * (ax - a3) /
+                        ((a0 - a1) * (a0 - a2) * (a0 - a3));
+            double w1 = (ax - a0) * (ax - a2) * (ax - a3) /
+                        ((a1 - a0) * (a1 - a2) * (a1 - a3));
+            double w2 = (ax - a0) * (ax - a1) * (ax - a3) /
+                        ((a2 - a0) * (a2 - a1) * (a2 - a3));
+            double w3 = (ax - a0) * (ax - a1) * (ax - a2) /
+                        ((a3 - a0) * (a3 - a1) * (a3 - a2));
+
+            Delta_vir = w0 * vd_table[a_idx_m1] + w1 * vd_table[a_idx] +
+                        w2 * vd_table[a_idx_p1] + w3 * vd_table[a_idx_p2];
+        }
+    }
+
+    return Delta_vir;
+}
+
+#endif
 
 float _calc_mass_definition(char **md) {
     int64_t length          = strlen(*md);
