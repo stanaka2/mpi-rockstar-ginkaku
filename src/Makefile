@@ -5,19 +5,19 @@ compiler=gnu
 ifeq ($(compiler), gnu)
 CC = mpicc
 CXX = mpicxx
-OFLAGS = -O3 -fopenmp -I/usr/include/tirpc
+OFLAGS = -O3 -fopenmp
 endif
 
 ifeq ($(compiler), intel)
 CC = mpiicx
 CXX = mpiicpx
-OFLAGS = -O3 -fiopenmp -I/usr/include/tirpc
+OFLAGS = -O3 -fiopenmp
 endif
 
 ifeq ($(compiler), fujitsu)
 CC = mpifccpx
 CXX = mpiFCCpx
-OFLAGS = -Ofast -fopenmp -Nclang -I/usr/include/tirpc
+OFLAGS = -Ofast -fopenmp -Nclang
 endif
 
 CFLAGS   = -m64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_DEFAULT_SOURCE -D_POSIX_SOURCE -D_POSIX_C_SOURCE=200809L -D_SVID_SOURCE -D_DARWIN_C_SOURCE -Wall -fno-math-errno -fPIC -std=c99
@@ -56,7 +56,7 @@ VIR_DENSE_TABLE = vir_dense.o vir_dense_table.o config_vars.o hubble.o
 	$(CXX) $(CXXFLAGS) $(EXTRA_FLAGS) -c -o $@ $<
 
 .c.o:
-	$(CC) $(CFLAGS) $(EXTRA_FLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(EXTRA_FLAGS) -c -o $@ $< -I/usr/include/tirpc
 
 .PHONY: mpi-rockstar
 mpi-rockstar: $(MPI_ROCKSTAR)
