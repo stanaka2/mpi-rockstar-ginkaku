@@ -1,6 +1,6 @@
 # MPI-Rockstar: a Hybrid MPI and OpenMP Parallel Implementation of the Rockstar Halo finder
 
-Copyright(c) 2024 Tokuue Tomoyuki, Tomoaki Ishiyama, Ken Osato, Satoshi Tanaka, and Peter Behroozi
+Copyright(c) 2024 Tomoyuki Tokuue, Tomoaki Ishiyama, Ken Osato, Satoshi Tanaka, and Peter Behroozi
 
 License: GNU GPLv3
 
@@ -62,7 +62,7 @@ Output halo's $R_{\rm vmax}$, which is a radius of maximum circular velocity.
 
 ### OUTPUT_NFW_CHI2 ###
 Output $\chi^2$ in the NFW fitting of the density profile of a halo. The NFW fitting is used to calculate the scale radius $r_{\rm s}$. 
-When the number of halo's bound particles is less than `MIN_SCALE_PART` (set in `nfw.c`, 100 by default), $r_{\rm s}$ is the same with $r_{\rm s}^{\rm klypin}$, which is the estimated scale radius using $V_{\rm max}$ and the halo mass. 
+When the number of halo's bound particles is less than `MIN_SCALE_PART` (set in `nfw.c`, 100 by default), $r_{\rm s}$ is the same with $r_{\rm s}^{\rm klypin}$, which is the estimated scale radius using $V_{\rm max}$ and the halo mass. In this case, $\chi^2=0$ is set.
 
 ### OUTPUT_INERTIA_TENSOR ###
 Output 12 elements of halo's inertia tensor. Six and remaining six of them are calculated by using bound particles within $R_{\rm vir}$ and $R_{\rm 500c}$, respectively. 
