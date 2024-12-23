@@ -11,7 +11,7 @@ endif
 ifeq ($(compiler), intel)
 CC = mpiicx
 CXX = mpiicpx
-OFLAGS = -O3 -fiopenmp
+OFLAGS = -O3 -fiopenmp -I/usr/include/tirpc
 endif
 
 ifeq ($(compiler), fujitsu)
