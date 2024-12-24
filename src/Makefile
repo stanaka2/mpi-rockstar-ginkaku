@@ -2,6 +2,8 @@ compiler=gnu
 #compiler=intel
 #compiler=fujitsu
 
+ginkaku_mode=yes
+
 ifeq ($(compiler), gnu)
 CC = mpicc
 CXX = mpicxx
@@ -37,16 +39,16 @@ MPI_ROCKSTAR_HDF5 = $(MPI_ROCKSTAR) io/io_internal_hdf5.o
 
 FIND_PARENTS = find_parents.o io/stringparse.o check_syscalls.o
 
+ifeq ($(ginkaku_mode), yes)
 #for GINKAKU
 CFLAGS += -DFOR_GINKAKU
 CXXFLAGS += -DFOR_GINKAKU
 MPI_ROCKSTAR += vir_dense.o
 MPI_ROCKSTAR_HDF5 += vir_dense.o
-#GSL_INCL = -I$(GSL_DIR)/include
-#GSL_LIBS = -L$(GSL_DIR)/lib -lgsl -lgslcblas
-GSL_LIBS =  -lgsl -lgslcblas
+GSL_INCL = -I$(GSL_DIR)/include
+GSL_LIBS = -L$(GSL_DIR)/lib -lgsl -lgslcblas
 GSL_FLAGS = $(GSL_INCL)
-
+endif
 VIR_DENSE_TABLE = vir_dense.o vir_dense_table.o config_vars.o hubble.o
 
 
