@@ -39,11 +39,16 @@ make find_parents -C src
 ```
 
 
-## HDF5 Supports for Output ##
+## HDF5 and Gadget-4 Format Supports for Output ##
 
 MPI-Rockstar supports the HDF5 output of halo catalogs by adding this line in a configuration file.
 ```
 OUTPUT_FORMAT="HDF5"
+```
+
+Gadget-4 (HDF5) format is also supported as input snapshots.
+```
+FILE_FORMAT="GADGET4"
 ```
 
 

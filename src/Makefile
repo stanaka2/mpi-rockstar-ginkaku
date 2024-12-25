@@ -19,7 +19,7 @@ endif
 ifeq ($(compiler), fujitsu)
 CC = mpifccpx
 CXX = mpiFCCpx
-OFLAGS = -Ofast -fopenmp -Nclang
+OFLAGS = -Nclang -Ofast -fopenmp
 endif
 
 CFLAGS   = -m64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_DEFAULT_SOURCE -D_POSIX_SOURCE -D_POSIX_C_SOURCE=200809L -D_SVID_SOURCE -D_DARWIN_C_SOURCE -Wall -fno-math-errno -fPIC -std=c99

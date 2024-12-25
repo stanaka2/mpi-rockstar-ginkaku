@@ -20,8 +20,6 @@
 #include "../config.h"
 #include "../particle.h"
 
-#define GADGET4_NTYPES 6
-
 void gadget4_read_dataset(hid_t HDF_FileID, char *filename, char *gid,
                           char *dataid, struct particle *p, int64_t to_read,
                           int64_t offset, int64_t stride, hid_t type) {
