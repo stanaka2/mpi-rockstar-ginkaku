@@ -15,6 +15,9 @@ extern struct halo            *halos;
 extern int64_t                 num_halos;
 extern struct extra_halo_info *extra_info;
 
+extern double particle_thresh_dens[5];
+#pragma omp   threadprivate(particle_thresh_dens)
+
 struct HaloInfo {
     struct halo            *halos;
     struct extra_halo_info *extra_info;
