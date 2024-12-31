@@ -657,7 +657,7 @@ void transfer_particles(int my_reader_rank, float *my_reader_bounds,
             }
         }
 #else
-#pragma omp parallel for       
+#pragma omp parallel for
 	for (int64_t i = 0; i < num_p; i++) {
             for (auto j : recipients) {
                 if (_check_bounds_raw(p[i].pos, writer_bounds[j])) {
@@ -1340,6 +1340,9 @@ void do_halo_finding(struct fof *meta_fofs, int64_t num_metafofs) {
         struct HaloInfo haloinfo;
         init_haloinfo(&haloinfo);
 
+        // initialize global thread-private values
+        calc_mass_definition();
+
 #pragma omp for schedule(dynamic)
         for (int64_t i = 0; i < (num_all_fofs - num_bfofs); i++) {
             find_subs(&all_fofs[i], &fofinfo, &haloinfo);
@@ -1600,7 +1603,7 @@ void find_halos(int64_t snap, int64_t my_rank, char *buffer,
             MPI_Allreduce(&num_p_print, &tot_num_p, 1, MPI_INT64_T, MPI_SUM,
                           MPI_COMM_WORLD);
             output_hdf5(id_offset, snap, my_rank, writer_bounds[my_rank],
-                        tot_num_halos, tot_num_p, 1);                              
+                        tot_num_halos, tot_num_p, 1);
         }
 #endif
 
@@ -2003,7 +2006,7 @@ int main(int argc, char **argv) {
     srand(1);
 #ifdef DO_CONFIG_MPI
     init_mpi( argc, argv);
-#endif    
+#endif
 
     for (i = 1; i < argc - 1; i++) {
         if (!strcmp("-c", argv[i])) {

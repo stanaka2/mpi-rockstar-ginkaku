@@ -946,11 +946,8 @@ void find_subs(struct fof *f, struct FOFInfo *fofinfo,
     cf.particles = copies;
     num_copies   = f->num_p;
 
-    // initialize global thread-private values
     if (LIGHTCONE)
         lightcone_set_scale(f->particles->pos);
-    else
-        calc_mass_definition();
 
     num_subfofs = 0;
     _find_subs(&cf, 0, fofinfo, haloinfo);
