@@ -32,6 +32,9 @@
 
 #define EPSILON 1.0E-6
 
+double particle_thresh_dens[5] = {0};
+// #pragma omp threadprivate(particle_thresh_dens) // to groupies.h
+
 gsl_interp_accel *acc, *acc2, *acc3, *acc4;
 gsl_spline       *spl, *spl2, *spl3, *spl4;
 

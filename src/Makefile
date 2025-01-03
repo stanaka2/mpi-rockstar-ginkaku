@@ -19,7 +19,8 @@ endif
 ifeq ($(compiler), fujitsu)
 CC = mpifccpx
 CXX = mpiFCCpx
-OFLAGS = -Nclang -Ofast -fopenmp
+#OFLAGS = -Nclang -Ofast -fopenmp # Ofast option fails to calculate vir_dense functions.
+OFLAGS = -Nclang -O3 -fopenmp
 endif
 
 CFLAGS   = -m64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_DEFAULT_SOURCE -D_POSIX_SOURCE -D_POSIX_C_SOURCE=200809L -D_SVID_SOURCE -D_DARWIN_C_SOURCE -Wall -fno-math-errno -fPIC -std=c99
@@ -55,10 +56,10 @@ VIR_DENSE_TABLE = vir_dense.o vir_dense_table.o config_vars.o hubble.o
 *.o: *.h Makefile*
 
 .cpp.o:
-	$(CXX) $(CXXFLAGS) $(EXTRA_FLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(EXTRA_FLAGS) $(GSL_FLAGS) -c -o $@ $<
 
 .c.o:
-	$(CC) $(CFLAGS) $(EXTRA_FLAGS) -c -o $@ $< -I/usr/include/tirpc
+	$(CC) $(CFLAGS) $(EXTRA_FLAGS) $(GSL_FLAGS) -c -o $@ $< -I/usr/include/tirpc
 
 .PHONY: mpi-rockstar
 mpi-rockstar: $(MPI_ROCKSTAR)
@@ -66,7 +67,7 @@ mpi-rockstar: $(MPI_ROCKSTAR)
 
 .PHONY: mpi-rockstar_hdf5
 mpi-rockstar_hdf5:
-	make _mpi-rockstar_hdf5 EXTRA_FLAGS="$(HDF5_FLAGS) $(GSL_FLAGS)"
+	make _mpi-rockstar_hdf5 EXTRA_FLAGS="$(HDF5_FLAGS)"
 
 .PHONY: _mpi-rockstar_hdf5
 _mpi-rockstar_hdf5: $(MPI_ROCKSTAR_HDF5)
