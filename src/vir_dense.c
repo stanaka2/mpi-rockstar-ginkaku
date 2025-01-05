@@ -4,20 +4,8 @@
 #include <string.h>
 #include <strings.h>
 #include <inttypes.h>
-#include "rockstar.h"
-#include "halo.h"
-#include "fof.h"
-#include "particle.h"
-#include "groupies.h"
-#include "subhalo_metric.h"
-#include "check_syscalls.h"
+
 #include "config_vars.h"
-#include "universal_constants.h"
-#include "potential.h"
-#include "nfw.h"
-#include "distance.h"
-#include "fun_times.h"
-#include "jacobi.h"
 #include "hubble.h"
 #include "vir_dense.h"
 
@@ -31,9 +19,6 @@
 #include <gsl/gsl_spline.h>
 
 #define EPSILON 1.0E-6
-
-double particle_thresh_dens[5] = {0};
-// #pragma omp threadprivate(particle_thresh_dens) // to groupies.h
 
 gsl_interp_accel *acc, *acc2, *acc3, *acc4;
 gsl_spline       *spl, *spl2, *spl3, *spl4;
