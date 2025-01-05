@@ -31,6 +31,7 @@ extern "C" {
 #include "interleaving.h"
 #include "fun_times.h"
 #include "merger.h"
+#include "groupies.h"
 #include "bitarray.h"
 #include "version.h"
 }
@@ -1333,15 +1334,13 @@ void do_halo_finding(struct fof *meta_fofs, int64_t num_metafofs) {
     const auto num_threads  = get_max_threads();
     auto       halo_offsets = allocate<int64_t>(num_threads + 1);
 
-#pragma omp parallel
+#pragma omp parallel \
+  copyin(particle_thresh_dens, particle_rvir_dens, particle_rvir_dens_z0, min_dens_index, dynamical_time, scale_dx)
     {
         struct FOFInfo fofinfo;
         init_fofinfo(&fofinfo);
         struct HaloInfo haloinfo;
         init_haloinfo(&haloinfo);
-
-        // initialize global thread-private values
-        calc_mass_definition();
 
 #pragma omp for schedule(dynamic)
         for (int64_t i = 0; i < (num_all_fofs - num_bfofs); i++) {

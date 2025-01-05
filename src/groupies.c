@@ -60,13 +60,7 @@ double  particle_thresh_dens[5] = {0};
 double  particle_rvir_dens = 0, particle_rvir_dens_z0 = 0;
 int64_t min_dens_index       = 0;
 double  dynamical_time       = 0;
-float   scale_dx       = 0;
-
-// In lightcone mode, SCALE_NOW is not a fixed value. Therefore, the following
-// variables are made thread-private to avoid conflicts.
-// #pragma omp threadprivate(particle_thresh_dens) // to groupies.h
-#pragma omp threadprivate(particle_rvir_dens, particle_rvir_dens_z0)
-#pragma omp threadprivate(min_dens_index, dynamical_time, scale_dx)
+float   scale_dx             = 1;
 
 void init_haloinfo(struct HaloInfo *haloinfo) {
     haloinfo->halos      = NULL;
