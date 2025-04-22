@@ -4,6 +4,10 @@ compiler=gnu
 
 ginkaku_mode=yes
 
+#intermediate_axis=yes
+#inertia_tensor=yes
+#nfw_chi2=yes
+
 ifeq ($(compiler), gnu)
 CC = mpicc
 CXX = mpicxx
@@ -27,6 +31,19 @@ CFLAGS   = -m64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 CXXFLAGS = -Wall -fno-math-errno -fPIC -std=c++11
 #ADDFLAGS = -DOUTPUT_RVMAX -DOUTPUT_NFW_CHI2 -DOUTPUT_INTERMEDIATE_AXIS
 #ADDFLAGS = -DOUTPUT_RVMAX -DOUTPUT_NFW_CHI2 -DOUTPUT_INERTIA_TENSOR
+
+#ADDFLAGS = -DOUTPUT_RVMAX
+
+ifeq ($(intermediate_axis),yes)
+ADDFLAGS += -DOUTPUT_INTERMEDIATE_AXIS
+endif
+ifeq ($(inertia_tensor),yes)
+ADDFLAGS += -DOUTPUT_INERTIA_TENSOR
+endif
+ifeq ($(nfw_chi2),yes)
+ADDFLAGS += -DOUTPUT_NFW_CHI2
+endif
+
 CFLAGS   += $(ADDFLAGS) $(OFLAGS) -DDO_CONFIG_MPI
 CXXFLAGS += $(ADDFLAGS) $(OFLAGS) -DDO_CONFIG_MPI
 
