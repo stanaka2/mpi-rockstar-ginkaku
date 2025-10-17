@@ -660,13 +660,34 @@ void transfer_particles(int my_reader_rank, float *my_reader_bounds,
 #else
 #pragma omp parallel for
 	for (int64_t i = 0; i < num_p; i++) {
-            for (auto j : recipients) {
+    dest_procs[i] = -1;  // initialize
+    for (auto j : recipients) {
                 if (_check_bounds_raw(p[i].pos, writer_bounds[j])) {
                     dest_procs[i] = j;
                     break;
                 }
             }
-        }
+
+    /* If no writer was hit (e.g., due to floating-point errors),
+      assign to the nearest bounds by the distance to each box center. */
+    if (dest_procs[i] == -1) {
+      double px = p[i].pos[0], py = p[i].pos[1], pz = p[i].pos[2];
+      double rmin = 1.0e100;
+      int j_min = -1;
+      for (auto j : recipients) {
+          const float *b = writer_bounds[j];
+          double cx = 0.5 * (b[0] + b[1]);
+          double cy = 0.5 * (b[2] + b[3]);
+          double cz = 0.5 * (b[4] + b[5]);
+          double dx = (double)px - (double)cx;
+          double dy = (double)py - (double)cy;
+          double dz = (double)pz - (double)cz;
+          double r2 = dx*dx + dy*dy + dz*dz;
+          if (r2 < rmin) { rmin = r2; j_min = j; }
+      }
+      dest_procs[i] = j_min;
+    }
+  }
 
 	for (int64_t i = 0; i < num_p; i++){
 	  send_counts[dest_procs[i]] ++;
@@ -735,9 +756,9 @@ void transfer_particles_mem_save(int my_reader_rank, float *my_reader_bounds,
               int j_min = -1;
               for (auto j : recipients) {
                   const float *b = writer_bounds[j];
-                  float cx = 0.5f * (b[0] + b[1]);
-                  float cy = 0.5f * (b[2] + b[3]);
-                  float cz = 0.5f * (b[4] + b[5]);
+                  double cx = 0.5 * (b[0] + b[1]);
+                  double cy = 0.5 * (b[2] + b[3]);
+                  double cz = 0.5 * (b[4] + b[5]);
                   double dx = (double)px - (double)cx;
                   double dy = (double)py - (double)cy;
                   double dz = (double)pz - (double)cz;
