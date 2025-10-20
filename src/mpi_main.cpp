@@ -1996,10 +1996,18 @@ void mpi_main(int argc, char *argv[]) {
                 read_blocks(snap + 1, my_reader_rank, buffer);
             find_halos(snap, my_rank, buffer, writer_bounds);
         }
+
+#ifdef FOR_GINKAKU
+        if (((strcasecmp(OUTPUT_FORMAT, "ASCII") != 0) ||
+             TEMPORAL_HALO_FINDING) &&
+            !DUMP_PARTICLES[0] && !IGNORE_PARTICLE_IDS && !LIGHTCONE)
+#else
         if (((strcasecmp(OUTPUT_FORMAT, "ASCII") != 0) ||
              TEMPORAL_HALO_FINDING) &&
             !DUMP_PARTICLES[0] && !IGNORE_PARTICLE_IDS)
+#endif
             do_merger_tree(snap, my_rank, writer_bounds);
+
         timed_output("[Success] Done with snapshot %" PRId64 ".\n", snap);
         /*
         if (strlen(RUN_PARALLEL_ON_SUCCESS)) {
