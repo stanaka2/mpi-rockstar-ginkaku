@@ -87,7 +87,10 @@ int set_expansion_table(char *inputfile, const double amin) {
     size_t      len = 128;
 
     // skip header
-    fgets(tmp, len, fp);
+    if (fgets(tmp, len, fp) == NULL) {
+        fclose(fp);
+        return EXIT_FAILURE;
+    }
 
     while (fscanf(fp, "%lf %lf", &a, &h) != EOF) {
         if (atbl0 > a)
@@ -102,7 +105,10 @@ int set_expansion_table(char *inputfile, const double amin) {
     fseek(fp, 0, SEEK_SET);
 
     // skip header
-    fgets(tmp, len, fp);
+    if (fgets(tmp, len, fp) == NULL) {
+        fclose(fp);
+        return EXIT_FAILURE;
+    }
 
     while (fscanf(fp, "%lf %lf", &a, &h) != EOF) {
         if (atbl0 > a)

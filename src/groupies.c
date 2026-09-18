@@ -149,7 +149,7 @@ double vir_density(double a) {
 }
 
 double get_vir_density(const double a) {
-    double x, y, y_appr, a_ta, zeta, eta_ta, eta_vir;
+    double x, y, a_ta, zeta, eta_ta, eta_vir;
     double delta_lin_col = 0.;
 
     double delta0    = 1.;
@@ -184,7 +184,7 @@ double get_vir_density(const double a) {
     eta_ta  = 2. * (Omegade_a(a_ta) / Omegam_a(a_ta)) / zeta;
     eta_vir = 2. * (Omegade_a(a_col) / Omegam_a(a_col)) * pow(x, -3.) / zeta;
 
-    y_appr = (1. - eta_vir / 2.) / (2. + eta_ta - 3. * eta_ta / 2.);
+    // y_appr = (1. - eta_vir / 2.) / (2. + eta_ta - 3. * eta_ta / 2.);
     y      = Newton_method(eta_vir, eta_ta);
 
     double Delta_vir = zeta * pow(x / y, 3.);
@@ -209,7 +209,10 @@ int set_vir_density_table(char *inputfile, const double amin) {
     size_t      len = 128;
 
     // skip header
-    fgets(tmp, len, fp);
+    if (fgets(tmp, len, fp) == NULL) {
+        fclose(fp);
+        return EXIT_FAILURE;
+    }
 
     while (fscanf(fp, "%lf %lf", &a, &vd) != EOF) {
         if (atbl0 > a)
@@ -224,7 +227,10 @@ int set_vir_density_table(char *inputfile, const double amin) {
     fseek(fp, 0, SEEK_SET);
 
     // skip header
-    fgets(tmp, len, fp);
+    if (fgets(tmp, len, fp) == NULL) {
+        fclose(fp);
+        return EXIT_FAILURE;
+    }
 
     while (fscanf(fp, "%lf %lf", &a, &vd) != EOF) {
         if (atbl0 > a)
