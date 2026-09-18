@@ -42,7 +42,9 @@ char **blocknames = NULL;
 #include <sys/types.h>
 
 int detect_hierarchical_input(int maxlen, int64_t snap, int64_t block) {
-    char    tmp_buff[512];
+    char    tmp_buff[1024];
+    maxlen = sizeof(tmp_buff); // use actual local buffer size
+
     int64_t i = 0, out = 0, l = strlen(FILENAME);
     assert(snap < NUM_SNAPS);
     snprintf(tmp_buff, maxlen, "%s/", INBASE);
