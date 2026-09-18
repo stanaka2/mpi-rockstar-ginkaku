@@ -7,10 +7,6 @@
 #include "potential.h"
 #include "halo.h"
 
-#define MAX_SCALE_BINS   50
-#define MIN_PART_PER_BIN 15
-#define MIN_SCALE_PART   (100)
-
 double c_to_f(double c) {
     double cp1 = 1.0 + c;
     return (c * cp1 / (log1p(c) * cp1 - c));
@@ -130,44 +126,52 @@ float calc_scale_from_bins(float rs, float *bin_r, float *weights,
 void calc_scale_radius(struct halo *h, float mvir, float rvir, float vmax,
                        float rvmax, float scale, struct potential *po,
                        int64_t total_p, int64_t bound) {
-    float   bin_r[MAX_SCALE_BINS + 1] = {0};
-    float   weights[MAX_SCALE_BINS]   = {0};
-    int64_t i, j, num_bins = 0, analyze_p = 0, ppbin = 0;
-    float   rs = h->klypin_rs =
-        estimate_scale_radius(mvir, rvir, vmax, rvmax, scale);
-    for (i = 0; i < total_p - 1; i++) {
-        if (bound && (po[i].pe < po[i].ke))
-            continue;
-        analyze_p++;
-    }
-    if (analyze_p < MIN_SCALE_PART) {
-        h->rs = rs;
-        return;
-    }
-    ppbin = ceil(((double)analyze_p / (double)MAX_SCALE_BINS));
-    if (ppbin < MIN_PART_PER_BIN)
-        ppbin = (analyze_p) / ((int64_t)(analyze_p / MIN_PART_PER_BIN));
-    bin_r[0] = 0;
-    for (i = 0, j = 0; i < total_p - 1; i++) {
-        if (bound && (po[i].pe < po[i].ke))
-            continue;
-        if (++j == ppbin) {
-            num_bins++;
-            bin_r[num_bins] = 1e3 * 0.5 * (sqrt(po[i].r2) + sqrt(po[i + 1].r2));
-            weights[num_bins - 1] = 1;
-            j                     = 0;
-        }
-    }
+  //float   bin_r[MAX_SCALE_BINS + 1] = {0};
+  //float   weights[MAX_SCALE_BINS]   = {0};
+  float   bin_r[MAX_SCALE_BINS + 1];
+  float   weights[MAX_SCALE_BINS];
+  int64_t i, j, num_bins = 0, analyze_p = 0, ppbin = 0;
 
-    for (i = 0; i < num_bins; i++)
-        if (bin_r[i] * 1e-3 < 3 * FORCE_RES)
-            weights[i] = 0.1;
+  for( i=0; i<MAX_SCALE_BINS; i++){
+    bin_r[i] = weights[i] = 0.0;
+  }
+  bin_r[MAX_SCALE_BINS] = 0.0;
 
-    float chi2 = 0.0;
-    h->rs = calc_scale_from_bins(rs, bin_r, weights, num_bins, &chi2);
+  float   rs = h->klypin_rs =
+    estimate_scale_radius(mvir, rvir, vmax, rvmax, scale);
+  for (i = 0; i < total_p - 1; i++) {
+    if (bound && (po[i].pe < po[i].ke))
+      continue;
+    analyze_p++;
+  }
+  if (analyze_p < MIN_SCALE_PART) {
+    h->rs = rs;
+    return;
+  }
+  ppbin = ceil(((double)analyze_p / (double)MAX_SCALE_BINS));
+  if (ppbin < MIN_PART_PER_BIN)
+    ppbin = (analyze_p) / ((int64_t)(analyze_p / MIN_PART_PER_BIN));
+  bin_r[0] = 0;
+  for (i = 0, j = 0; i < total_p - 1; i++) {
+    if (bound && (po[i].pe < po[i].ke))
+      continue;
+    if (++j == ppbin) {
+      num_bins++;
+      bin_r[num_bins] = 1e3 * 0.5 * (sqrt(po[i].r2) + sqrt(po[i + 1].r2));
+      weights[num_bins - 1] = 1;
+      j                     = 0;
+    }
+  }
+
+  for (i = 0; i < num_bins; i++)
+    if (bin_r[i] * 1e-3 < 3 * FORCE_RES)
+      weights[i] = 0.1;
+
+  float chi2 = 0.0;
+  h->rs = calc_scale_from_bins(rs, bin_r, weights, num_bins, &chi2);
 #ifdef OUTPUT_NFW_CHI2
-    h->chi2 = chi2;
+  h->chi2 = chi2;
 #endif    
-    //h->rs = calc_scale_from_bins(rs, bin_r, weights, num_bins);
+  //h->rs = calc_scale_from_bins(rs, bin_r, weights, num_bins);
 
 }

@@ -2,6 +2,7 @@
 #define CHECK_SYSCALLS_H
 #include <stdio.h>
 #include <stdlib.h>
+#include "error.h"
 #include <inttypes.h>
 #include <sys/types.h>
 
@@ -22,6 +23,9 @@ void  *check_mmap_memory(int64_t length);
 pid_t  check_waitpid(pid_t pid);
 void   check_fskip(FILE *stream, off_t offset, char *buffer, size_t buf_size);
 void   check_mtrim(void);
+int    is_directory(const char *input);
+void   make_directory_hir(const char *directory_name);
+
 
 #define check_fprintf(file, ...)                                               \
     {                                                                          \

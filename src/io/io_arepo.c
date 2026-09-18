@@ -20,8 +20,6 @@
 #include "../config.h"
 #include "../particle.h"
 
-#define AREPO_NTYPES 6
-
 void arepo_read_dataset(hid_t HDF_FileID, char *filename, char *gid,
                         char *dataid, struct particle *p, int64_t to_read,
                         int64_t offset, int64_t stride, hid_t type) {
@@ -123,9 +121,11 @@ void load_particles_arepo(char *filename, struct particle **p, int64_t *num_p) {
     BOX_SIZE  = arepo_readheader_float(HDF_Header, filename, "BoxSize");
     BOX_SIZE *= AREPO_LENGTH_CONVERSION;
 
-    uint32_t npart_low[AREPO_NTYPES], npart_high[AREPO_NTYPES] = {0};
+    uint32_t npart_low[AREPO_NTYPES], npart_high[AREPO_NTYPES];
     int64_t  npart[AREPO_NTYPES];
     float    massTable[AREPO_NTYPES];
+
+    for(int i = 0; i < AREPO_NTYPES; i++) npart_high[i] = 0;
 
     arepo_readheader_array(HDF_Header, filename, "NumPart_ThisFile",
                            H5T_NATIVE_UINT64, npart);
@@ -141,12 +141,17 @@ void load_particles_arepo(char *filename, struct particle **p, int64_t *num_p) {
 
     H5Gclose(HDF_Header);
 
-    PARTICLE_MASS        = massTable[AREPO_DM_PARTTYPE] * AREPO_MASS_CONVERSION;
-    AVG_PARTICLE_SPACING = cbrt(PARTICLE_MASS / (Om * CRITICAL_DENSITY));
+    if (massTable[AREPO_DM_PARTTYPE] || !PARTICLE_MASS ||
+        RESCALE_PARTICLE_MASS) {
+        if (!RESCALE_PARTICLE_MASS)
+            PARTICLE_MASS =
+                massTable[AREPO_DM_PARTTYPE] * AREPO_MASS_CONVERSION;
+        else
+            PARTICLE_MASS =
+                Om * CRITICAL_DENSITY * pow(BOX_SIZE, 3) / TOTAL_PARTICLES;
+    }
 
-    if (RESCALE_PARTICLE_MASS)
-        PARTICLE_MASS =
-            Om * CRITICAL_DENSITY * pow(BOX_SIZE, 3) / TOTAL_PARTICLES;
+    AVG_PARTICLE_SPACING = cbrt(PARTICLE_MASS / (Om * CRITICAL_DENSITY));
 
     printf("AREPO: filename:       %s\n", filename);
     printf("AREPO: box size:       %g Mpc/h\n", BOX_SIZE);

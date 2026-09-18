@@ -10,8 +10,8 @@
 #include "universal_constants.h"
 
 #ifdef DO_CONFIG_MPI
-#include "mpi.h"    
-#endif  
+#include "mpi.h"
+#endif
 
 
 void setup_config(void) {
@@ -46,18 +46,18 @@ void setup_config(void) {
         NUM_WRITERS = FORK_PROCESSORS_PER_MACHINE;
 
     if (STARTING_SNAP >= NUM_SNAPS) {
-        fprintf(stderr, "[Warning] No work will be done unless NUM_SNAPS > "
+        fprintf(stderr, "[Rockstar warning] No work will be done unless NUM_SNAPS > "
                         "STARTING_SNAP in config file!\n");
     }
 
     if (NUM_READERS > NUM_BLOCKS) {
         fprintf(stderr,
-                "[Error] NUM_READERS must be <= NUM_BLOCKS in config file.\n");
+                "[Rockstar error] NUM_READERS must be <= NUM_BLOCKS in config file.\n");
         exit(1);
     }
 
     if ((strncmp(OUTPUT_FORMAT, "ASCII", 5) == 0) && STRICT_SO_MASSES) {
-        fprintf(stderr, "[Warning] STRICT_SO_MASSES requires binary outputs; "
+        fprintf(stderr, "[Rockstar warning] STRICT_SO_MASSES requires binary outputs; "
                         "setting OUTPUT_FORMAT=BOTH.\n");
         OUTPUT_FORMAT = "BOTH";
     }
@@ -105,17 +105,18 @@ void do_config(char *filename) {
 #undef real3
 #undef integer
   
-  syntax_check(&c, "[Warning]");
+  syntax_check(&c, "[Rockstar warning]");
   setup_config();
   free_config(c);
   if (filename && strlen(filename)) {
-    free(ROCKSTAR_CONFIG_FILENAME);
-    ROCKSTAR_CONFIG_FILENAME = strdup(filename);
+    free(CONFIG_FILENAME);
+    CONFIG_FILENAME = strdup(filename);
   }
 }
 
 
 void output_config(const char *filename) {
+    make_directory_hir(OUTBASE);
     char  buffer[1024];
     FILE *output;
     if (!filename)

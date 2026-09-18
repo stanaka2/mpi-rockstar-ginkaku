@@ -1,0 +1,4 @@
+sphinx>=4.0
+myst-parser
+linkify-it-py
+sphinx-rtd-theme

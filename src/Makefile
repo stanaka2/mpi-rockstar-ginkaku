@@ -23,15 +23,16 @@ endif
 ifeq ($(compiler), fujitsu)
 CC = mpifccpx
 CXX = mpiFCCpx
-#OFLAGS = -Nclang -Ofast -fopenmp # Ofast option fails to calculate vir_dense functions.
+# Ofast option fails to calculate vir_dense functions.
 OFLAGS = -Nclang -O3 -fopenmp
 endif
 
-CFLAGS   = -m64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_DEFAULT_SOURCE -D_POSIX_SOURCE -D_POSIX_C_SOURCE=200809L -D_SVID_SOURCE -D_DARWIN_C_SOURCE -Wall -fno-math-errno -fPIC -std=c99
-CXXFLAGS = -Wall -fno-math-errno -fPIC -std=c++11
+CFLAGS   = -m64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_DEFAULT_SOURCE -D_POSIX_SOURCE -D_POSIX_C_SOURCE=200809L -D_SVID_SOURCE -D_DARWIN_C_SOURCE -Wall -fno-math-errno -fPIC -std=c99 -fexceptions
+CXXFLAGS = -Wall -fno-math-errno -fPIC -std=c++11 -fexceptions
+
+# Optional halo properties
 #ADDFLAGS = -DOUTPUT_RVMAX -DOUTPUT_NFW_CHI2 -DOUTPUT_INTERMEDIATE_AXIS
 #ADDFLAGS = -DOUTPUT_RVMAX -DOUTPUT_NFW_CHI2 -DOUTPUT_INERTIA_TENSOR
-
 #ADDFLAGS = -DOUTPUT_RVMAX
 
 ifeq ($(intermediate_axis),yes)
@@ -44,31 +45,34 @@ ifeq ($(nfw_chi2),yes)
 ADDFLAGS += -DOUTPUT_NFW_CHI2
 endif
 
-CFLAGS   += $(ADDFLAGS) $(OFLAGS) -DDO_CONFIG_MPI
-CXXFLAGS += $(ADDFLAGS) $(OFLAGS) -DDO_CONFIG_MPI
+CFLAGS   += $(ADDFLAGS) $(OFLAGS) -DDO_CONFIG_MPI -DOMPI_SKIP_MPICXX -DMPICH_SKIP_MPICXX
+CXXFLAGS += $(ADDFLAGS) $(OFLAGS) -DDO_CONFIG_MPI -DOMPI_SKIP_MPICXX -DMPICH_SKIP_MPICXX
 
 HDF5_INCLUDE = -I/path/to/hdf5/include
 HDF5_LIB = -L/path/to/hdf5/lib
 HDF5_FLAGS = -DH5_USE_16_API -DENABLE_HDF5 $(HDF5_INCLUDE)
 
-MPI_ROCKSTAR = rockstar.o check_syscalls.o fof.o groupies.o subhalo_metric.o potential.o nfw.o jacobi.o fun_times.o universe_time.o hubble.o integrate.o distance.o config_vars.o config.o bounds.o inthash.o io/read_config.o merger.o io/meta_io.o io/io_internal.o io/io_internal_hdf5.o io/io_ascii.o io/stringparse.o io/io_gadget.o io/io_generic.o io/io_art.o io/io_tipsy.o io/io_bgc2.o io/io_util.o io/io_arepo.o io/io_gadget4.o io/io_hdf5.o io/io_kyf.o interleaving.o mpi_main.o
-
-MPI_ROCKSTAR_HDF5 = $(MPI_ROCKSTAR) io/io_internal_hdf5.o
-
-FIND_PARENTS = find_parents.o io/stringparse.o check_syscalls.o
+MPI_ROCKSTAR_CORE = rockstar.o check_syscalls.o error.o fof.o groupies.o subhalo_metric.o potential.o nfw.o jacobi.o fun_times.o universe_time.o hubble.o integrate.o distance.o config_vars.o config.o bounds.o inthash.o io/read_config.o merger.o io/meta_io.o io/io_internal.o io/io_internal_hdf5.o io/io_ascii.o io/stringparse.o io/io_gadget.o io/io_generic.o io/io_art.o io/io_tipsy.o io/io_bgc2.o io/io_util.o io/io_pkdgrav3lcp.o io/io_arepo.o io/io_gadget4.o io/io_hdf5.o io/io_kyf.o interleaving.o
 
 ifeq ($(ginkaku_mode), yes)
-#for GINKAKU
+# for GINKAKU
 CFLAGS += -DFOR_GINKAKU
 CXXFLAGS += -DFOR_GINKAKU
-MPI_ROCKSTAR += vir_dense.o
-MPI_ROCKSTAR_HDF5 += vir_dense.o
+MPI_ROCKSTAR_CORE += vir_dense.o
+
 GSL_INCL = -I$(GSL_DIR)/include
 GSL_LIBS = -L$(GSL_DIR)/lib -lgsl -lgslcblas
 GSL_FLAGS = $(GSL_INCL)
 endif
-VIR_DENSE_TABLE = vir_dense.o vir_dense_table.o config_vars.o hubble.o
 
+MPI_ROCKSTAR      = $(MPI_ROCKSTAR_CORE) mpi_main.o
+MPI_ROCKSTAR_LIB  = $(MPI_ROCKSTAR_CORE) mpi_main_lib.o
+
+MPI_ROCKSTAR_HDF5     = $(MPI_ROCKSTAR) io/io_internal_hdf5.o
+MPI_ROCKSTAR_LIB_HDF5 = $(MPI_ROCKSTAR_LIB) io/io_internal_hdf5.o
+
+FIND_PARENTS = find_parents.o io/stringparse.o check_syscalls.o error.o
+VIR_DENSE_TABLE = vir_dense.o vir_dense_table.o config_vars.o hubble.o
 
 *.o: *.h Makefile*
 
@@ -77,6 +81,21 @@ VIR_DENSE_TABLE = vir_dense.o vir_dense_table.o config_vars.o hubble.o
 
 .c.o:
 	$(CC) $(CFLAGS) $(EXTRA_FLAGS) $(GSL_FLAGS) -c -o $@ $< -I/usr/include/tirpc
+
+mpi_main_lib.o: mpi_main.cpp
+	$(CXX) $(CXXFLAGS) $(EXTRA_FLAGS) $(GSL_FLAGS) -DMPI_ROCKSTAR_LIBRARY -c -o $@ $<
+
+.PHONY: libmpi_rockstar
+libmpi_rockstar: $(MPI_ROCKSTAR_LIB)
+	ar rcs libmpi_rockstar.a $^
+
+.PHONY: libmpi_rockstar_hdf5
+libmpi_rockstar_hdf5:
+	make _libmpi_rockstar_hdf5 EXTRA_FLAGS="$(HDF5_FLAGS)"
+
+.PHONY: _libmpi_rockstar_hdf5
+_libmpi_rockstar_hdf5: $(MPI_ROCKSTAR_LIB_HDF5)
+	ar rcs libmpi_rockstar_hdf5.a $^
 
 .PHONY: mpi-rockstar
 mpi-rockstar: $(MPI_ROCKSTAR)
@@ -92,12 +111,12 @@ _mpi-rockstar_hdf5: $(MPI_ROCKSTAR_HDF5)
 
 .PHONY: find_parents
 find_parents: $(FIND_PARENTS)
-	$(CC) $(CFLAGS) -o ../$@ $^ -lm
+	$(CC) $(CFLAGS) -o ../$@ $^ -lm -lstdc++
 
 .PHONY: vir_dense_table
 vir_dense_table: $(VIR_DENSE_TABLE)
-	$(CC) $(CFLAGS)  -o ../$@ $^ $(GSL_FLAGS) $(GSL_LIBS) -lm
-
+	$(CC) $(CFLAGS) -o ../$@ $^ $(GSL_FLAGS) $(GSL_LIBS) -lm
 
 clean:
-	rm -f *.o *~ io/*.o io/*~
+	rm -f *.o *~ io/*.o io/*~ ../libmpi_rockstar.a ../libmpi_rockstar_hdf5.a
+

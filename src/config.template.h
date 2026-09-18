@@ -32,12 +32,11 @@ integer(GADGET_HALO_PARTICLE_TYPE, 1);
 integer(RESCALE_PARTICLE_MASS, 0);
 
 #ifdef ENABLE_HDF5
-integer(AREPO_ID_BYTES, 8);
+integer(AREPO_NTYPES, 6);
 real(AREPO_MASS_CONVERSION, 1e10);
 real(AREPO_LENGTH_CONVERSION, 1e-3);
 integer(AREPO_DM_PARTTYPE, 1);
 
-integer(GADGET4_ID_BYTES, 8);
 integer(GADGET4_NTYPES, 6);
 real(GADGET4_MASS_CONVERSION, 1e10);
 real(GADGET4_LENGTH_CONVERSION, 1.0);
@@ -46,6 +45,11 @@ integer(GADGET4_DM_PARTTYPE, 1);
 
 real(TIPSY_LENGTH_CONVERSION, 1.0);
 real(TIPSY_VELOCITY_CONVERSION, 1.0);
+
+// Conversion parameters for PKDGRAV3 lightcone particle format
+real(PKDGRAV3LCP_POS_SCALE, 1);
+real(PKDGRAV3LCP_POS_SHIFT, 0);
+real(PKDGRAV3LCP_VEL_SCALE, 1);
 
 integer(PARALLEL_IO, 1);
 string(PARALLEL_IO_SERVER_ADDRESS, "auto");
@@ -121,7 +125,7 @@ real(BOX_SIZE, 250); // In Mpc/h
 integer(OUTPUT_LEVELS, 0);
 real3(DUMP_PARTICLES, "0 0 0");
 
-string(ROCKSTAR_CONFIG_FILENAME, "");
+string(CONFIG_FILENAME, "");
 real(AVG_PARTICLE_SPACING, 0); // Auto-generated
 integer(SINGLE_SNAP, 0);
 
@@ -140,6 +144,11 @@ integer(SUBDIR_DIGITS_OUTPUT, 4);    // and the length of subdir names (or sub-s
 // Additional parameters for MPI Rockstar for memory saving transfer
 integer(MEMORY_SAVING_TRANSFER, 0); // Flag for using memory saving transfer
 
+// NFW fitting
+integer(MIN_SCALE_PART, 100);
+integer( MIN_PART_PER_BIN, 15);
+integer( MAX_SCALE_BINS, 50);
+
 
 // Add for GINKAKU by stanaka
 #ifdef FOR_GINKAKU
@@ -147,5 +156,5 @@ string(EXPANSION_TABLEFILE, "none"); // Path of expansion table file. This is va
 string(VIR_DENSE_TABLEFILE, "none"); // Path of virial density table file. This is valid if specified.
 string(CDIST_TABLEFILE, "none"); // Path of comoving distance table file. This is valid if specified.
 integer(READ_TABLE_ORDER, 3); // Accuracy of table interpolation.
-integer(VEL_UNIT_GADGET, 1); // Unit of velocity of particle. 1:Gadget format [(1/sqrt(a)) km/s]; 0:Physical unit [km/s] 
+integer(VEL_UNIT_GADGET, 1); // Unit of velocity of particle. 1:Gadget format [(1/sqrt(a)) km/s]; 0:Physical unit [km/s]
 #endif
